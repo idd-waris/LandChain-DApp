@@ -1,0 +1,313 @@
+/* General Body Styles */
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    margin: 0;
+    padding: 0;
+    background-color: #f4f7f6;
+    color: #333;
+    display: flex;
+    justify-content: center; /* Center the dashboard container horizontally */
+    align-items: flex-start; /* Align dashboard container to the top */
+    min-height: 100vh;
+}
+
+/* Dashboard Container */
+.dashboard-container {
+    display: flex;
+    flex-direction: column; /* Changed: Stack header, then the sidebar/content area */
+    width: 90%; /* Adjust as needed */
+    max-width: 1200px;
+    margin: 30px auto; /* Centers the container and provides vertical margin */
+    background-color: #ffffff;
+    border-radius: 10px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    overflow: hidden; /* For rounded corners */
+    min-height: calc(100vh - 60px); /* Ensure container takes up most of the screen, accounting for 30px top/bottom margin */
+}
+
+/* Header Styles */
+.dashboard-header {
+    background-color: #28a745; /* Green header */
+    color: white;
+    padding: 20px 30px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%; /* Spans full width of its parent (.dashboard-container) */
+    box-sizing: border-box; /* Include padding in width */
+    /* REMOVED: position: absolute; */ /* THIS WAS THE MAIN CAUSE OF OVERLAP */
+    /* REMOVED: top: 0; */
+    /* REMOVED: left: 0; */
+    z-index: 10; /* Keep z-index if you have other elements that might overlap */
+    flex-shrink: 0; /* Prevent header from shrinking if space is tight */
+}
+
+.dashboard-header h1 {
+    margin: 0;
+    font-size: 1.8em;
+}
+
+.wallet-info {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+#wallet-status {
+    margin: 0;
+    font-size: 0.9em;
+    font-weight: 500;
+}
+
+#connect-wallet-btn {
+    background-color: #007bff; /* Blue button */
+    color: white;
+    border: none;
+    padding: 8px 15px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 0.9em;
+    transition: background-color 0.3s ease;
+}
+
+#connect-wallet-btn:hover {
+    background-color: #0056b3;
+}
+
+/* NEW: Wrapper for Sidebar and Main Content */
+.dashboard-main-area {
+    display: flex; /* Arranges sidebar and content side-by-side */
+    flex-grow: 1; /* Allows this area to take all remaining vertical space */
+    width: 100%; /* Ensures it spans the full width of .dashboard-container */
+}
+
+
+/* Sidebar Styles */
+.dashboard-sidebar {
+    width: 250px; /* Fixed width for sidebar */
+    background-color: #343a40; /* Dark sidebar */
+    color: white;
+    padding-top: 20px; /* Adjusted padding-top (no longer needs to clear absolute header) */
+    min-height: 100%; /* Occupy full height of .dashboard-main-area */
+    box-sizing: border-box;
+    /* REMOVED: position: sticky; */ /* No longer needed with this layout */
+    /* REMOVED: top: 0; */
+    /* REMOVED: left: 0; */
+    flex-shrink: 0; /* Prevent sidebar from shrinking */
+}
+
+.dashboard-sidebar ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.dashboard-sidebar ul li a {
+    display: block;
+    padding: 15px 30px;
+    color: white;
+    text-decoration: none;
+    transition: background-color 0.3s ease;
+    border-left: 5px solid transparent;
+}
+
+.dashboard-sidebar ul li a:hover {
+    background-color: #495057;
+    border-left-color: #007bff; /* Blue border on hover */
+}
+
+.dashboard-sidebar ul li a.active {
+    background-color: #495057;
+    border-left-color: #28a745; /* Green border for active */
+    font-weight: bold;
+}
+
+/* Main Content Styles */
+.dashboard-content {
+    flex-grow: 1; /* Take remaining space */
+    padding: 30px; /* Adjusted padding-top */
+    background-color: #ffffff;
+    overflow-y: auto; /* Allow scrolling within content if it overflows */
+}
+
+.content-section {
+    display: none; /* Hide all sections by default */
+    background-color: #f8f9fa;
+    padding: 25px;
+    border-radius: 8px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+}
+
+.content-section.active {
+    display: block; /* Show active section */
+}
+
+.content-section h2 {
+    color: #28a745; /* Green headings */
+    margin-top: 0;
+    margin-bottom: 25px;
+    font-size: 1.6em;
+    border-bottom: 2px solid #e9ecef;
+    padding-bottom: 10px;
+}
+
+/* Form Styles */
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 600;
+    color: #555;
+}
+
+.form-group input[type="text"] {
+    width: calc(100% - 20px); /* Adjust for padding */
+    padding: 10px;
+    border: 1px solid #ced4da;
+    border-radius: 5px;
+    font-size: 1em;
+    box-sizing: border-box; /* Include padding in width */
+    transition: border-color 0.3s ease;
+}
+
+.form-group input[type="text"]:focus {
+    border-color: #28a745; /* Green focus border */
+    outline: none;
+    box-shadow: 0 0 0 0.2rem rgba(40, 167, 69, 0.25);
+}
+
+/* Buttons within sections */
+.content-section button {
+    background-color: #28a745; /* Green button */
+    color: white;
+    border: none;
+    padding: 12px 25px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 1.1em;
+    transition: background-color 0.3s ease, transform 0.1s ease;
+    margin-top: 10px;
+}
+
+.content-section button:hover {
+    background-color: #218838;
+    transform: translateY(-1px);
+}
+
+.content-section button:active {
+    transform: translateY(0);
+}
+
+/* Status Messages */
+.status-message {
+    margin-top: 20px;
+    padding: 12px 15px;
+    border-radius: 5px;
+    font-weight: 500;
+    font-size: 0.95em;
+    border: 1px solid transparent;
+}
+
+.status-message.info {
+    background-color: #e2f0ff; /* Light blue */
+    color: #0056b3;
+    border-color: #b3d7ff;
+}
+
+.status-message.success {
+    background-color: #d4edda; /* Light green */
+    color: #155724;
+    border-color: #c3e6cb;
+}
+
+.status-message.error {
+    background-color: #f8d7da; /* Light red */
+    color: #721c24;
+    border-color: #f5c6cb;
+}
+
+.status-message.warning {
+    background-color: #fff3cd; /* Light yellow */
+    color: #856404;
+    border-color: #ffeeba;
+}
+
+/* Result Box for Get Land Details */
+.result-box {
+    margin-top: 25px;
+    padding: 20px;
+    background-color: #e9f5ee; /* Very light green */
+    border: 1px solid #cce5d4;
+    border-radius: 8px;
+    font-size: 1em;
+    color: #333;
+}
+
+.result-box p {
+    margin: 5px 0;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .dashboard-container {
+        flex-direction: column; /* Stack all vertically */
+        width: 100%;
+        margin: 0;
+        border-radius: 0;
+        box-shadow: none;
+        min-height: 100vh; /* Take full height on small screens */
+    }
+
+    .dashboard-header {
+        position: static; /* Header back to normal flow */
+        border-radius: 0;
+    }
+
+    .dashboard-main-area { /* Changed: Stack sidebar and content vertically */
+        flex-direction: column;
+    }
+
+    .dashboard-sidebar {
+        width: 100%; /* Sidebar takes full width */
+        padding-top: 0;
+        position: static;
+        min-height: auto;
+        border-radius: 0;
+    }
+
+    .dashboard-sidebar ul {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        border-top: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .dashboard-sidebar ul li {
+        flex-grow: 1;
+        text-align: center;
+    }
+
+    .dashboard-sidebar ul li a {
+        padding: 12px 10px;
+        border-left: none;
+        border-bottom: 3px solid transparent;
+    }
+
+    .dashboard-sidebar ul li a:hover {
+        border-left-color: transparent;
+        border-bottom-color: #007bff;
+    }
+
+    .dashboard-sidebar ul li a.active {
+        border-left-color: transparent;
+        border-bottom-color: #28a745;
+    }
+
+    .dashboard-content {
+        padding: 20px;
+        padding-top: 20px; /* No fixed header space needed anymore */
+    }
+}
