@@ -97,6 +97,8 @@
                     <button id="showRegisterFormBtn" class="btn btn-primary">Register Land</button>
                     <button id="showTransferFormBtn" class="btn btn-warning">Transfer Ownership</button>
                     <button id="showViewLandFormBtn" class="btn btn-secondary">View Land</button>
+                    <button id="showAllRegisteredBtn" class="btn btn-primary">All Registered Lands</button>
+                    <button id="showAllTransferredBtn" class="btn btn-warning">All Transferred Lands</button>
                 </div>
             </div>
 
@@ -150,6 +152,44 @@
                             </form>
                             <div id="landDetailsOutput" class="mt-3"></div>
                         </div>
+
+                        <div id="allRegisteredLandsSection" class="card p-3 my-3 d-none">
+                            <h4>All Registered Lands</h4>
+                            <div class="table-responsive">
+                                <table class="table table-striped table-bordered">
+                                    <thead>
+                                        <tr>
+                                            <th>Plot ID</th>
+                                            <th>Location</th>
+                                            <th>Current Owner</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="registeredLandsTableBody">
+                                        </tbody>
+                                </table>
+                                <div id="registeredLandsStatus" class="mt-2 text-info"></div>
+                            </div>
+                        </div>
+
+                        <div id="allTransferredLandsSection" class="card p-3 my-3 d-none">
+                            <h4>All Transferred Lands History</h4>
+                            <div class="table-responsive">
+                                <table class="table table-striped table-bordered">
+                                    <thead>
+                                        <tr>
+                                            <th>Plot ID</th>
+                                            <th>Previous Owner</th>
+                                            <th>New Owner</th>
+                                            <th>Timestamp</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="transferredLandsTableBody">
+                                        </tbody>
+                                </table>
+                                <div id="transferredLandsStatus" class="mt-2 text-info"></div>
+                            </div>
+                        </div>
+
                     </div>
                 </div>
             </div>
@@ -158,6 +198,192 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
-    <script type="module" src="../landchainService.js"></script>
+    <script type="module">
+        import * as LandChain from '../landchainService.js';
+
+        // Helper function to toggle sections, now updated to handle new sections
+        const toggleSection = (showId) => {
+            const sections = ['registerLandSection', 'transferOwnershipSection', 'viewLandSection', 'allRegisteredLandsSection', 'allTransferredLandsSection'];
+            sections.forEach(id => {
+                const section = document.getElementById(id);
+                if (section) {
+                    if (id === showId) {
+                        section.classList.remove('d-none');
+                    } else {
+                        section.classList.add('d-none');
+                    }
+                }
+            });
+        };
+
+        const loadAllRegisteredLands = async () => {
+            const tableBody = document.getElementById('registeredLandsTableBody');
+            const statusDiv = document.getElementById('registeredLandsStatus');
+            tableBody.innerHTML = '';
+            statusDiv.textContent = 'Loading registered lands...';
+
+            try {
+                const lands = await LandChain.getAllRegisteredLands();
+                if (lands.length === 0) {
+                    statusDiv.textContent = 'No registered lands found.';
+                } else {
+                    lands.forEach(land => {
+                        const row = tableBody.insertRow();
+                        row.insertCell().textContent = land.plotNumber;
+                        row.insertCell().textContent = land.location;
+                        row.insertCell().textContent = land.owner;
+                    });
+                    statusDiv.textContent = '';
+                }
+            } catch (error) {
+                statusDiv.textContent = `Error loading registered lands: ${error.message}`;
+            }
+        };
+
+        const loadAllTransferredLands = async () => {
+            const tableBody = document.getElementById('transferredLandsTableBody');
+            const statusDiv = document.getElementById('transferredLandsStatus');
+            tableBody.innerHTML = '';
+            statusDiv.textContent = 'Loading transferred lands history...';
+
+            try {
+                const transfers = await LandChain.getAllTransferredLands();
+                if (transfers.length === 0) {
+                    statusDiv.textContent = 'No land transfers recorded.';
+                } else {
+                    transfers.forEach(transfer => {
+                        const row = tableBody.insertRow();
+                        row.insertCell().textContent = transfer.plotNumber;
+                        row.insertCell().textContent = transfer.previousOwner;
+                        row.insertCell().textContent = transfer.newOwner;
+                        row.insertCell().textContent = transfer.timestamp;
+                    });
+                    statusDiv.textContent = '';
+                }
+            } catch (error) {
+                statusDiv.textContent = `Error loading transferred lands: ${error.message}`;
+            }
+        };
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            const account = await LandChain.init();
+            if (account) {
+                 LandChain.updateUIBasedOnAccount(account);
+            } else {
+                LandChain.updateUIBasedOnAccount(null);
+            }
+
+            if (window.ethereum) {
+                window.ethereum.on('accountsChanged', () => {
+                    window.location.reload();
+                });
+            }
+
+            const path = window.location.pathname;
+            if (path.includes('admin/dashboard.html')) {
+                 const showRegisterFormBtn = document.getElementById('showRegisterFormBtn');
+                if (showRegisterFormBtn) showRegisterFormBtn.addEventListener('click', () => toggleSection('registerLandSection'));
+                const showTransferFormBtn = document.getElementById('showTransferFormBtn');
+                if (showTransferFormBtn) showTransferFormBtn.addEventListener('click', () => toggleSection('transferOwnershipSection'));
+                const showViewLandFormBtn = document.getElementById('showViewLandFormBtn');
+                if (showViewLandFormBtn) showViewLandFormBtn.addEventListener('click', () => toggleSection('viewLandSection'));
+
+                const showAllRegisteredBtn = document.getElementById('showAllRegisteredBtn');
+                if (showAllRegisteredBtn) showAllRegisteredBtn.addEventListener('click', async () => {
+                    toggleSection('allRegisteredLandsSection');
+                    await loadAllRegisteredLands();
+                });
+                const showAllTransferredBtn = document.getElementById('showAllTransferredBtn');
+                if (showAllTransferredBtn) showAllTransferredBtn.addEventListener('click', async () => {
+                    toggleSection('allTransferredLandsSection');
+                    await loadAllTransferredLands();
+                });
+
+                const registerLandForm = document.getElementById('registerLandForm');
+                if (registerLandForm) {
+                    registerLandForm.addEventListener('submit', async (e) => {
+                        e.preventDefault();
+                        const submitBtn = e.target.querySelector('button[type="submit"]');
+                        submitBtn.disabled = true;
+                        submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Registering...';
+                        const plotId = document.getElementById('plotIdInput').value;
+                        const location = document.getElementById('locationInput').value;
+                        const ownerAddress = document.getElementById('ownerAddressInput').value;
+                        try {
+                            await LandChain.registerLand(plotId, location, ownerAddress);
+                            document.getElementById('registerLandForm').reset();
+                            await loadAllRegisteredLands();
+                        } catch (error) {
+                            // Error handled by the service function
+                        } finally {
+                            submitBtn.disabled = false;
+                            submitBtn.innerHTML = 'Register Land';
+                        }
+                    });
+                }
+
+                const transferOwnershipForm = document.getElementById('transferOwnershipForm');
+                if (transferOwnershipForm) {
+                    transferOwnershipForm.addEventListener('submit', async (e) => {
+                        e.preventDefault();
+                        const submitBtn = e.target.querySelector('button[type="submit"]');
+                        submitBtn.disabled = true;
+                        submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Transferring...';
+                        const plotId = document.getElementById('transferPlotIdInput').value;
+                        const newOwnerAddress = document.getElementById('newOwnerAddressInput').value;
+                        try {
+                            await LandChain.transferOwnership(plotId, newOwnerAddress);
+                            document.getElementById('transferOwnershipForm').reset();
+                            await loadAllRegisteredLands();
+                            await loadAllTransferredLands();
+                        } catch (error) {
+                            // Error handled by the service function
+                        } finally {
+                            submitBtn.disabled = false;
+                            submitBtn.innerHTML = 'Transfer Ownership';
+                        }
+                    });
+                }
+
+                const viewLandForm = document.getElementById('viewLandForm');
+                if (viewLandForm) {
+                    viewLandForm.addEventListener('submit', async (e) => {
+                        e.preventDefault();
+                        const submitBtn = e.target.querySelector('button[type="submit"]');
+                        submitBtn.disabled = true;
+                        submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Viewing...';
+                        const plotId = document.getElementById('viewPlotIdInput').value;
+                        const outputDiv = document.getElementById('landDetailsOutput');
+                        if (outputDiv) outputDiv.innerHTML = 'Fetching details...';
+                        try {
+                            const land = await LandChain.getLand(plotId);
+                            if (land && land.isRegistered) {
+                                if (outputDiv) {
+                                    outputDiv.innerHTML = `
+                                        <h5>Land Details for Plot ${land.plotNumber}</h5>
+                                        <p><strong>Location:</strong> ${land.location}</p>
+                                        <p><strong>Current Owner:</strong> ${land.owner}</p>
+                                        <p><strong>Is Registered:</strong> Yes</p>
+                                    `;
+                                }
+                            } else {
+                                if (outputDiv) {
+                                    outputDiv.innerHTML = `<p class="alert alert-warning">Plot ID "${plotId}" not registered.</p>`;
+                                }
+                            }
+                        } catch (error) {
+                            console.error("Failed to view land:", error);
+                            if (outputDiv) {
+                                outputDiv.innerHTML = `<p class="alert alert-danger">Failed to retrieve land details. Ensure the Plot ID is correct and the wallet is connected.</p>`;
+                            }
+                        } finally {
+                            submitBtn.disabled = false;
+                            submitBtn.innerHTML = 'View Land';
+                        }
+                    });
+                }
+            }
+        });
+    </script>
 </body>
 </html>

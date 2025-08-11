@@ -2,7 +2,7 @@
 import { ethers } from "https://cdn.jsdelivr.net/npm/ethers@6.11.1/dist/ethers.min.js";
 
 // --- Configuration ---
-const CONTRACT_ADDRESS = "0x50317e557955E387f460Da2f2bEd6b02fe1FAdDA"; // !!! REPLACE WITH YOUR CONTRACT ADDRESS !!!
+const CONTRACT_ADDRESS = "0x64A5932ebad82eDaDc33b757Fe8fEED763c1D97F"; // !!! REPLACE WITH YOUR CONTRACT ADDRESS !!!
 const CONTRACT_ABI = [
 	{
 		"inputs": [],
@@ -29,6 +29,12 @@ const CONTRACT_ABI = [
 				"internalType": "address",
 				"name": "newOwner",
 				"type": "address"
+			},
+			{
+				"indexed": false,
+				"internalType": "uint256",
+				"name": "timestamp",
+				"type": "uint256"
 			}
 		],
 		"name": "LandOwnershipTransferred",
@@ -216,14 +222,13 @@ let currentAccount = null;
 
 const ADMIN_ADDRESS = "0x2F3BaF7CE8BAB1F9fC30D22fA00cF492c786AF35".toLowerCase();
 
-const showToast = (message, type = 'success') => {
+export const showToast = (message, type = 'success') => {
     let background = '#4CAF50';
     if (type === 'error') {
         background = '#f44336';
     } else if (type === 'info') {
         background = '#2196F3';
     }
-    // `Toastify` is now a global object, no import needed.
     if (typeof Toastify !== 'undefined') {
         Toastify({
             text: message,
@@ -242,7 +247,7 @@ const showToast = (message, type = 'success') => {
     }
 };
 
-const updateUIBasedOnAccount = (account) => {
+export const updateUIBasedOnAccount = (account) => {
     const connectBtn = document.getElementById('connectWalletBtn');
     const disconnectBtn = document.getElementById('disconnectWalletBtn');
     const walletStatus = document.getElementById('walletStatus');
@@ -266,7 +271,7 @@ const updateUIBasedOnAccount = (account) => {
     }
 };
 
-const init = async () => {
+export const init = async () => {
     if (window.ethereum) {
         try {
             provider = new ethers.BrowserProvider(window.ethereum);
@@ -283,7 +288,7 @@ const init = async () => {
     return null;
 };
 
-const connectWallet = async () => {
+export const connectWallet = async () => {
     if (window.ethereum) {
         try {
             provider = new ethers.BrowserProvider(window.ethereum);
@@ -306,14 +311,14 @@ const connectWallet = async () => {
     }
 };
 
-const getContract = () => {
+export const getContract = () => {
     if (!contract) {
         throw new Error("Wallet not connected or contract not initialized.");
     }
     return contract;
 };
 
-const getLand = async (plotId) => {
+export const getLand = async (plotId) => {
     if (!contract) throw new Error("Wallet not connected or contract not initialized.");
     try {
         const land = await contract.getLand(plotId);
@@ -329,7 +334,7 @@ const getLand = async (plotId) => {
     }
 };
 
-const registerLand = async (plotId, location, initialOwner) => {
+export const registerLand = async (plotId, location, initialOwner) => {
     if (!contract) throw new Error("Wallet not connected or contract not initialized.");
     try {
         showToast("Registering land... Please confirm in your wallet.", 'info');
@@ -343,7 +348,7 @@ const registerLand = async (plotId, location, initialOwner) => {
     }
 };
 
-const transferOwnership = async (plotId, newOwner) => {
+export const transferOwnership = async (plotId, newOwner) => {
     if (!contract) throw new Error("Wallet not connected or contract not initialized.");
     try {
         showToast("Transferring ownership... Please confirm in your wallet.", 'info');
@@ -357,17 +362,54 @@ const transferOwnership = async (plotId, newOwner) => {
     }
 };
 
-const toggleSection = (showId) => {
-    ['registerLandSection', 'transferOwnershipSection', 'viewLandSection'].forEach(id => {
-        const section = document.getElementById(id);
-        if (section) {
-            if (id === showId) {
-                section.classList.remove('d-none');
-            } else {
-                section.classList.add('d-none');
+// NEW: Function to get all registered lands
+export const getAllRegisteredLands = async () => {
+    try {
+        if (!contract) {
+            await init();
+            if (!contract) return [];
+        }
+
+        const landIds = await contract.allPlotNumbers();
+        const allLands = [];
+        for (const plotId of landIds) {
+            const land = await getLand(plotId);
+            if (land.isRegistered) { // Only add if it's a valid registered land
+                allLands.push(land);
             }
         }
-    });
+        return allLands;
+    } catch (error) {
+        console.error("Error fetching all registered lands:", error);
+        showToast("Failed to fetch all registered lands.", 'error');
+        return [];
+    }
+};
+
+// NEW: Function to get all transferred lands from events
+export const getAllTransferredLands = async () => {
+    try {
+        if (!contract) {
+            await init();
+            if (!contract) return [];
+        }
+
+        const filter = contract.filters.LandOwnershipTransferred();
+        const events = await contract.queryFilter(filter);
+
+        const transferredLands = events.map(event => ({
+            plotNumber: event.args.plotNumber,
+            previousOwner: event.args.oldOwner,
+            newOwner: event.args.newOwner,
+            timestamp: new Date(Number(event.args.timestamp) * 1000).toLocaleString()
+        }));
+
+        return transferredLands;
+    } catch (error) {
+        console.error("Error fetching all transferred lands:", error);
+        showToast("Failed to fetch all transferred lands.", 'error');
+        return [];
+    }
 };
 
 document.addEventListener('DOMContentLoaded', async () => {
@@ -375,14 +417,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     updateUIBasedOnAccount(account);
 
     if (window.ethereum) {
-        window.ethereum.on('accountsChanged', () => {
-            window.location.reload();
+        window.ethereum.on('accountsChanged', (accounts) => {
+            updateUIBasedOnAccount(accounts[0] || null);
         });
     }
 
     const path = window.location.pathname;
 
-    // Login page logic
     const connectBtn = document.getElementById('connectWalletBtn');
     if (connectBtn && path.includes('index.html')) {
         connectBtn.addEventListener('click', async () => {
@@ -402,7 +443,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     }
 
-    // Dashboard page logic
     if (path.includes('dashboard.html')) {
         const disconnectBtn = document.getElementById('disconnectWalletBtn');
         if (disconnectBtn) {
@@ -412,7 +452,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             });
         }
 
-        // Admin-specific event listeners
         if (path.includes('admin/dashboard.html')) {
             const showRegisterFormBtn = document.getElementById('showRegisterFormBtn');
             if (showRegisterFormBtn) showRegisterFormBtn.addEventListener('click', () => toggleSection('registerLandSection'));
@@ -420,6 +459,19 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (showTransferFormBtn) showTransferFormBtn.addEventListener('click', () => toggleSection('transferOwnershipSection'));
             const showViewLandFormBtn = document.getElementById('showViewLandFormBtn');
             if (showViewLandFormBtn) showViewLandFormBtn.addEventListener('click', () => toggleSection('viewLandSection'));
+
+            const showAllRegisteredBtn = document.getElementById('showAllRegisteredBtn');
+            if (showAllRegisteredBtn) showAllRegisteredBtn.addEventListener('click', async () => {
+                toggleSection('allRegisteredLandsSection');
+                await loadAllRegisteredLands();
+            });
+
+            const showAllTransferredBtn = document.getElementById('showAllTransferredBtn');
+            if (showAllTransferredBtn) showAllTransferredBtn.addEventListener('click', async () => {
+                toggleSection('allTransferredLandsSection');
+                await loadAllTransferredLands();
+            });
+
 
             const registerLandForm = document.getElementById('registerLandForm');
             if (registerLandForm) {
@@ -434,6 +486,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     try {
                         await registerLand(plotId, location, ownerAddress);
                         document.getElementById('registerLandForm').reset();
+                        await loadAllRegisteredLands();
                     } catch (error) {
                         // Error handled by the service function
                     } finally {
@@ -455,6 +508,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                     try {
                         await transferOwnership(plotId, newOwnerAddress);
                         document.getElementById('transferOwnershipForm').reset();
+                        await loadAllRegisteredLands();
+                        await loadAllTransferredLands();
                     } catch (error) {
                         // Error handled by the service function
                     } finally {
@@ -465,7 +520,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         }
 
-        // View Land logic (for both dashboards)
         const viewLandForm = document.getElementById('viewLandForm');
         if (viewLandForm) {
             viewLandForm.addEventListener('submit', async (e) => {
